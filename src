@@ -1,0 +1,435 @@
+using System;
+using System.IO;
+using System.Linq;
+using System.Text;
+using DocumentFormat.OpenXml;
+using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Wordprocessing;
+
+namespace WordDocumentGenerator
+{
+    static class Program
+    {
+        static void Main()
+        {
+            try
+            {
+                Console.Write("Enter 'a' to create 30 docx files, or 'b' to merge own files:");
+                string choice = Console.ReadLine();
+
+                if (choice.Equals("a"))
+                {
+                    Console.Write("Is it alright if the files are merged? (Y/N): ");
+                    char mergeChoice = char.ToUpper(Console.ReadKey().KeyChar);
+                    Console.WriteLine();
+
+                    Console.WriteLine("Select a font for the documents:");
+                    Console.WriteLine("1. Times New Roman");
+                    Console.WriteLine("2. Arial");
+                    Console.WriteLine("3. Calibri");
+                    Console.Write("Enter the number of the font: ");
+                    int fontChoice = int.Parse(Console.ReadLine());
+
+                    string selectedFont = GetFontFromChoice(fontChoice);
+
+                    Console.Write("Enter the font size (e.g., 12): ");
+                    int fontSize = int.Parse(Console.ReadLine());
+
+                    Console.WriteLine("Select a trim size for the documents:");
+                    Console.WriteLine("1. 8.5x11");
+                    Console.WriteLine("2. 6x9");
+                    Console.WriteLine("3. 5x8");
+                    Console.WriteLine("4. 8.5x8.5");
+                    Console.Write("Enter the number of the trim size: ");
+                    int trimSizeChoice = int.Parse(Console.ReadLine());
+
+                    string selectedTrimSize = GetTrimSizeFromChoice(trimSizeChoice);
+
+
+                    Console.Write("Do you want to add page breaks for chapters? (Y/N): ");
+                    char addPageBreakChoice = char.ToUpper(Console.ReadKey().KeyChar);
+                    bool addPageBreaks = (addPageBreakChoice == 'Y');
+                    Console.WriteLine("");
+                    GenerateRandomDocxFiles(mergeChoice == 'Y', selectedFont, fontSize, selectedTrimSize, addPageBreaks);
+                }
+                else if (choice.Equals("b"))
+                {
+                    Console.Write("What is the target folder path for your files: ");
+                    string targetFolderPath = Console.ReadLine();
+
+                    Console.Write("What prefix do you want? (CASE SENSITIVE): ");
+                    string userPrefix = Console.ReadLine();
+
+                    Console.WriteLine("Select a font for the documents:");
+                    Console.WriteLine("1. Times New Roman");
+                    Console.WriteLine("2. Arial");
+                    Console.WriteLine("3. Calibri");
+                    Console.Write("Enter the number of the font: ");
+                    int fontChoice = int.Parse(Console.ReadLine());
+
+                    string selectedFont = GetFontFromChoice(fontChoice);
+
+                    Console.Write("Enter the font size (e.g., 12): ");
+                    int fontSize = int.Parse(Console.ReadLine());
+
+                    Console.WriteLine("Select a trim size for the documents:");
+                    Console.WriteLine("1. 8.5x11");
+                    Console.WriteLine("2. 6x9");
+                    Console.WriteLine("3. 5x8");
+                    Console.WriteLine("4. 8.5x8.5");
+                    Console.Write("Enter the number of the trim size: ");
+                    int trimSizeChoice = int.Parse(Console.ReadLine());
+
+                    string selectedTrimSize = GetTrimSizeFromChoice(trimSizeChoice);
+
+                    Console.Write("Do you want to add page breaks for chapters? (Y/N): ");
+                    char addPageBreakChoice = char.ToUpper(Console.ReadKey().KeyChar);
+                    bool addPageBreaks = (addPageBreakChoice == 'Y');
+
+                    MergeUserProvidedFiles(targetFolderPath, userPrefix, selectedFont, fontSize, selectedTrimSize, addPageBreaks);
+                }
+                else
+                {
+                    Console.WriteLine("Enter 'a' or 'b' only.");
+                }
+            }
+            catch (FormatException)
+            {
+                Console.WriteLine("Invalid input. Please enter a valid choice.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+            }
+            Console.ReadLine();
+        }
+
+        // GetFontFromChoice method remains the same as previously defined
+
+        static string GetFontFromChoice(int fontChoice)
+        {
+            string selectedFont = "Times New Roman"; // Default font
+
+            switch (fontChoice)
+            {
+                case 1:
+                    selectedFont = "Times New Roman";
+                    break;
+                case 2:
+                    selectedFont = "Arial";
+                    break;
+                case 3:
+                    selectedFont = "Calibri";
+                    break;
+                default:
+                    Console.WriteLine("Invalid font selection. Using default font (Times New Roman).");
+                    break;
+            }
+
+            return selectedFont;
+        }
+
+        static string GetTrimSizeFromChoice(int trimSizeChoice)
+        {
+            string selectedTrimSize = "8.5x11"; // Default trim size
+
+            switch (trimSizeChoice)
+            {
+                case 1:
+                    selectedTrimSize = "8.5x11";
+                    break;
+                case 2:
+                    selectedTrimSize = "6x9";
+                    break;
+                case 3:
+                    selectedTrimSize = "5x8";
+                    break;
+                case 4:
+                    selectedTrimSize = "8.5x8.5";
+                    break;
+                default:
+                    Console.WriteLine("Invalid trim size selection. Using default trim size (8.5x11).");
+                    break;
+            }
+
+            return selectedTrimSize;
+        }
+
+        // GenerateRandomDocxFiles, CreateWordDocument, MergeUserProvidedFiles, 
+        // MergeDocuments, AnalyzeMergedDocument, CountWordsInBody, GetTextFromDocument, 
+        // GetTextFromRun methods remain the same as previously defined
+        static void GenerateRandomDocxFiles(bool mergeFiles, string selectedFont, int fontSize, string selectedTrimSize, bool addPageBreaks)
+        {
+            try
+            {
+                Console.Write("Enter the target folder path for random files: ");
+                string targetFolderPath = Console.ReadLine();
+
+                Console.WriteLine("Enter the name you want to add before each of your files: ");
+                string userPrefix = Console.ReadLine();
+
+                // Existing RandomWords array remains unchanged...
+                string[] RandomWords = new string[]
+       {
+           "apple", "banana", "cherry", "date", "elderberry",
+  "fig", "grape", "honeydew", "kiwi", "lemon"};
+
+                string[] sizes = selectedTrimSize.Split('x');
+                double width = double.Parse(sizes[0]);
+                double height = double.Parse(sizes[1]);
+
+                for (int i = 1; i <= 30; i++)
+                {
+                    string fileName = $"{targetFolderPath}\\{userPrefix}{i}.docx";
+                    string content = GenerateRandomContent(RandomWords, 101);
+                    CreateWordDocument(fileName, content, selectedFont, fontSize, width, height, addPageBreaks);
+                    Console.WriteLine($"Created: {fileName}");
+                }
+
+                Console.WriteLine("Word documents created successfully.");
+
+                if (mergeFiles)
+                {
+                    string mergedDocPath = $"{targetFolderPath}\\MergedDoc.docx";
+                    MergeDocuments(targetFolderPath, mergedDocPath, userPrefix, selectedFont, fontSize, selectedTrimSize, addPageBreaks);
+                    Console.WriteLine($"Merged document saved to: {mergedDocPath}");
+                    AnalyzeMergedDocument(mergedDocPath);
+                }
+            }
+            catch (DirectoryNotFoundException)
+            {
+                Console.WriteLine("Target folder not found. Please provide a valid folder path.");
+            }
+            catch (IOException ex)
+            {
+                Console.WriteLine($"An I/O error occurred: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+            }
+        }
+        static void CreateWordDocument(string fileName, string content, string selectedFont, int fontSize, double width, double height, bool addPageBreaks)
+        {
+            using (WordprocessingDocument wordDoc = WordprocessingDocument.Create(fileName, WordprocessingDocumentType.Document))
+            {
+                MainDocumentPart mainPart = wordDoc.AddMainDocumentPart();
+                mainPart.Document = new Document();
+                Body body = mainPart.Document.AppendChild(new Body());
+
+                SectionProperties sectionProps = new SectionProperties(
+                    new PageSize() { Width = Convert.ToUInt32(width * 1440), Height = Convert.ToUInt32(height * 1440) }); // 1 inch = 1440 units
+                body.Append(sectionProps);
+
+                string[] paragraphs = content.Split('\n'); // Assuming content is divided into paragraphs
+
+                foreach (string paragraphText in paragraphs)
+                {
+                    Paragraph para = new Paragraph();
+                    Run run = new Run(new Text { Text = paragraphText });
+                    run.RunProperties = new RunProperties(new RunFonts() { Ascii = selectedFont }, new FontSize() { Val = (fontSize * 2).ToString() });
+                    para.Append(run);
+
+                    if (addPageBreaks && IsChapterBreak(paragraphText))
+                    {
+                        para.AppendChild(new Break() { Type = BreakValues.Page });
+                    }
+
+                    body.Append(para);
+                }
+            }
+        }
+
+
+        static void MergeUserProvidedFiles(string targetFolderPath, string userPrefix, string selectedFont, int fontSize, string selectedTrimSize, bool addPageBreaks)
+            {
+                try
+                {
+                    Console.Write("Enter the full path to where you want the merged document to be saved: ");
+                    string mergedDocPath = Path.ChangeExtension(Console.ReadLine(), "docx");
+
+                    MergeDocuments(targetFolderPath, mergedDocPath, userPrefix, selectedFont, fontSize, selectedTrimSize, addPageBreaks);
+                    Console.WriteLine($"Merged document saved to: {mergedDocPath}");
+                    AnalyzeMergedDocument(mergedDocPath);
+                }
+                catch (DirectoryNotFoundException)
+                {
+                    Console.WriteLine("Target folder not found. Please provide a valid folder path.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"An error occurred: {ex.Message}");
+                }
+            }
+
+
+      
+
+
+        static string GenerateRandomContent(string[] randomWords, int targetWordCount)
+        {
+            StringBuilder content = new StringBuilder();
+            Random random = new Random();
+
+            while (content.ToString().Split(' ').Length < targetWordCount)
+            {
+                string randomWord = randomWords[random.Next(randomWords.Length - 1)];
+                content.Append(randomWord);
+                content.Append(" ");
+            }
+
+            return content.ToString().Trim();
+        }
+
+
+
+        static void MergeDocuments(string sourceFolderPath, string mergedDocPath, string userPrefix, string selectedFont, int fontSize, string selectedTrimSize, bool addPageBreaks)
+        {
+            try
+            {
+                using (WordprocessingDocument mergedDoc = WordprocessingDocument.Create(mergedDocPath, WordprocessingDocumentType.Document))
+                {
+                    MainDocumentPart mergedMainPart = mergedDoc.AddMainDocumentPart();
+                    mergedMainPart.Document = new Document();
+                    Body mergedBody = mergedMainPart.Document.AppendChild(new Body());
+
+                    bool isChapterBreak = false; // Flag to identify the first "1 - 2" beat
+
+                    foreach (var sourceFile in Directory.GetFiles(sourceFolderPath, userPrefix + "*.docx"))
+                    {
+                        using (WordprocessingDocument sourceDoc = WordprocessingDocument.Open(sourceFile, false))
+                        {
+                            var sourceBody = sourceDoc.MainDocumentPart.Document.Body;
+
+                            foreach (var element in sourceBody.Elements())
+                            {
+                                if (element is Paragraph paragraph)
+                                {
+                                    if (!isChapterBreak && IsChapterBreak(paragraph.InnerText))
+                                    {
+                                        mergedBody.AppendChild(new Paragraph(new Run(new Break() { Type = BreakValues.Page })));
+                                        isChapterBreak = true;
+                                    }
+
+                                    foreach (var run in paragraph.Elements<Run>())
+                                    {
+                                        run.RunProperties = new RunProperties(new RunFonts() { Ascii = selectedFont }, new FontSize() { Val = (fontSize * 2).ToString() });
+                                    }
+
+                                    mergedBody.AppendChild(paragraph.CloneNode(true));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Console.WriteLine($"Merged document saved to: {mergedDocPath}");
+                AnalyzeMergedDocument(mergedDocPath);
+            }
+            catch (DirectoryNotFoundException)
+            {
+                Console.WriteLine("Target folder not found. Please provide a valid folder path.");
+            }
+            catch (IOException ex)
+            {
+                Console.WriteLine($"An I/O error occurred: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+            }
+        }
+
+
+
+
+
+
+
+        static void AnalyzeMergedDocument(string someDocPath)
+        {
+            using (WordprocessingDocument mergedDoc = WordprocessingDocument.Open(someDocPath, false))
+            {
+                Body body = mergedDoc.MainDocumentPart.Document.Body;
+                string text = GetTextFromDocument(body);
+                string[] words = text.Split(new char[] { ' ', '\t', '\r', '\n', '.', ',', ':', ';', '!', '?', '-' }, StringSplitOptions.RemoveEmptyEntries);
+                int totalWordCount = CountWordsInBody(body);
+                Console.WriteLine($"Total Word Count: {totalWordCount}");
+
+                var wordFrequency = words
+                    .GroupBy(w => w.ToLower())
+                    .OrderByDescending(group => group.Count())
+                    .Take(20);
+
+                Console.WriteLine("Most Common Words:");
+                int rank = 1;
+                foreach (var group in wordFrequency)
+                {
+                    Console.WriteLine($"{rank}. {group.Key}: {group.Count()} times");
+                    rank++;
+                }
+            }
+        }
+
+        static int CountWordsInBody(Body body)
+        {
+            int wordCount = 0;
+
+            foreach (var paragraph in body.Elements<Paragraph>())
+            {
+                string paragraphText = paragraph.InnerText;
+                string[] words = paragraphText.Split(new char[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+                wordCount += words.Length;
+            }
+
+            return wordCount;
+        }
+
+        static string GetTextFromDocument(Body body)
+        {
+            StringBuilder text = new StringBuilder();
+
+            foreach (var element in body.Elements())
+            {
+                if (element is Paragraph paragraph)
+                {
+                    foreach (var run in paragraph.Elements<Run>())
+                    {
+                        string runText = GetTextFromRun(run);
+                        text.Append(runText + " ");
+                    }
+                }
+            }
+
+            return text.ToString();
+        }
+
+        static string GetTextFromRun(Run run)
+        {
+            StringBuilder runText = new StringBuilder();
+
+            foreach (var textElement in run.Elements<DocumentFormat.OpenXml.Wordprocessing.Text>())
+            {
+                runText.Append(textElement.Text);
+            }
+
+            return runText.ToString();
+        }
+
+        static bool IsChapterBreak(string paragraph)
+        {
+           
+            return paragraph.Contains("Chapter") || paragraph.Contains("1 - 2") || paragraph.Contains("5-6");
+        }
+
+
+        static bool IsChapterBreak(Paragraph paragraph)
+        {
+            
+            return paragraph.InnerText.Contains("1 - " ) || paragraph.InnerText.Contains("2 - ");
+        }
+    }
+}
+
+
+
