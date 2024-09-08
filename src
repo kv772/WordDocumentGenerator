@@ -218,7 +218,7 @@ namespace WordDocumentGenerator
                 Body body = mainPart.Document.AppendChild(new Body());
 
                 SectionProperties sectionProps = new SectionProperties(
-                    new PageSize() { Width = Convert.ToUInt32(width * 1440), Height = Convert.ToUInt32(height * 1440) }); // 1 inch = 1440 units
+                    new PageSize() { Width = Convert.ToUInt32(width * 1440), Height = Convert.ToUInt32(height * 1440) }); 
                 body.Append(sectionProps);
 
                 string[] paragraphs = content.Split('\n'); // Assuming content is divided into paragraphs
